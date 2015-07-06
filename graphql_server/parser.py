@@ -9,6 +9,7 @@ from dataql.parsers.base import BaseParser, rule
 from dataql.parsers.mixins import NamedArgsParserMixin
 from dataql.resources import Field, Filter, Object
 
+from graphql_server.resources import Query
 
 class ArgumentsMixin(NamedArgsParserMixin):
     """Overwrite the default mixin to only accept colons as name/value separator
@@ -70,13 +71,15 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
     ...     }
     ... }
     ... ''').data
-    [<Object[human] .human(id=1000)>
-      <Field[id] />
-      <Field[name] />
-      <Object[friends]>
+    <Query[default]>
+      <Object[human] .human(id=1000)>
+        <Field[id] />
         <Field[name] />
-      </Object[friends]>
-    </Object[human]>]
+        <Object[friends]>
+          <Field[name] />
+        </Object[friends]>
+      </Object[human]>
+    </Query[default]>
 
     """
 
@@ -101,14 +104,13 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         children : list
             - 0: for ``WS`` (optional whitespace): ``None``
             - 1: for ``UNNAMED_QUERY``: 1 list of instances of subclasses of
-                ``.resources.Resource``, with ``is_root`` set to ``True``.
+                ``dataql.resources.Resource``, with ``is_root`` set to ``True``.
             - 1: for ``WS`` (optional whitespace): ``None``
 
         Returns
         -------
-        list(.resources.Resource)
-            A list of instances of subclasses of ``.resources.Resource``, with ``is_root`` set to
-            ``True``.
+        .resources.Query
+            A ``Query`` resource with "default" as name.
 
         Example
         -------
@@ -120,9 +122,11 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ...     }
         ... }
         ... ''').data
-        [<Object[hero]>
-          <Field[name] />
-        </Object[hero]>]
+        <Query[default]>
+          <Object[hero]>
+            <Field[name] />
+          </Object[hero]>
+        </Query[default]>
 
         >>> GraphQLParser(r'''
         ... {
@@ -136,13 +140,16 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ...     }
         ... }
         ... ''').data
-        [<Object[luke] .human(id="1000")>
-          <Field[name] />
-          <Field[homePlanet] />
-        </Object[luke]>, <Object[leia] .human(id="1003")>
-          <Field[name] />
-          <Field[homePlanet] />
-        </Object[leia]>]
+        <Query[default]>
+          <Object[luke] .human(id="1000")>
+            <Field[name] />
+            <Field[homePlanet] />
+          </Object[luke]>
+          <Object[leia] .human(id="1003")>
+            <Field[name] />
+            <Field[homePlanet] />
+          </Object[leia]>
+        </Query[default]>
 
         """
 
@@ -159,13 +166,12 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         _ (node) : parsimonious.nodes.Node.
         children : list
             - 0: for ``SELECTION_SET``: a list of instance of a subclass of
-            ``.resources.Resource``.
+            ``dataql.resources.Resource``.
 
         Returns
         -------
-        list(.resources.Resource)
-            A list of instances of subclasses of ``.resources.Resource``, with ``is_root`` set to
-            ``True``.
+        .resources.Query
+            A ``Query`` resource with "default" as name.
 
         Example
         -------
@@ -175,9 +181,11 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ...         name
         ...     }
         ... }''', default_rule='UNNAMED_QUERY').data
-        [<Object[hero]>
-          <Field[name] />
-        </Object[hero]>]
+        <Query[default]>
+          <Object[hero]>
+            <Field[name] />
+          </Object[hero]>
+        </Query[default]>
 
         >>> GraphQLParser(r'''{
         ...     luke: human(id: "1000") {
@@ -189,13 +197,16 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ...         homePlanet
         ...     }
         ... }''', default_rule='UNNAMED_QUERY').data
-        [<Object[luke] .human(id="1000")>
-          <Field[name] />
-          <Field[homePlanet] />
-        </Object[luke]>, <Object[leia] .human(id="1003")>
-          <Field[name] />
-          <Field[homePlanet] />
-        </Object[leia]>]
+        <Query[default]>
+          <Object[luke] .human(id="1000")>
+            <Field[name] />
+            <Field[homePlanet] />
+          </Object[luke]>
+          <Object[leia] .human(id="1003")>
+            <Field[name] />
+            <Field[homePlanet] />
+          </Object[leia]>
+        </Query[default]>
 
         """
 
@@ -203,7 +214,7 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         for resource in resources:
             resource.is_root = True
 
-        return resources
+        return Query('default', resources)
 
     @rule('CUR_O SELECTIONS CUR_C')
     def visit_selection_set(self, _, children):
@@ -214,13 +225,14 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         _ (node) : parsimonious.nodes.Node.
         children : list
             - 0: for ``CUR_O`` (opening curly): ``None``
-            - 1: for ``SELECTIONS``: a list of instance of a subclass of ``.resources.Resource``.
+            - 1: for ``SELECTIONS``: a list of instance of a subclass of
+                 ``dataql.resources.Resource``.
             - 2: for ``CUR_C``, (closing curly): ``None``
 
         Returns
         -------
-        list(.resources.Resource)
-            A list of instances of subclasses of ``.resources.Resource``.
+        list(dataql.resources.Resource)
+            A list of instances of subclasses of ``dataql.resources.Resource``.
 
         Example
         -------
@@ -258,13 +270,13 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         _ (node) : parsimonious.nodes.Node.
         children : list
             -0: for ``SELECTIONS_SET?``: a list of instance of a subclass of
-                ``.resources.Resource``, or None if nothing.
+                ``dataql.resources.Resource``, or None if nothing.
 
         Returns
         -------
-        list(.resources.Resource), or None
-            A list of instances of subclasses of ``.resources.Resource`` if anything, ``None``
-            otherwise.
+        list(dataql.resources.Resource), or None
+            A list of instances of subclasses of ``dataql.resources.Resource`` if anything,
+            ``None`` otherwise.
 
         Example
         -------
@@ -303,12 +315,13 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ---------
         _ (node) : parsimonious.nodes.Node.
         children : list
-            - 0: for ``SELECTIONS+``: a list of instance of a subclass of ``.resources.Resource``.
+            - 0: for ``SELECTIONS+``: a list of instance of a subclass of
+                 ``dataql.resources.Resource``.
 
         Returns
         -------
-        list(.resources.Resource)
-            A list of instances of subclasses of ``.resources.Resource``.
+        list(dataql.resources.Resource)
+            A list of instances of subclasses of ``dataql.resources.Resource``.
 
         Example
         -------
@@ -345,12 +358,12 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ---------
         _ (node) : parsimonious.nodes.Node.
         children : list
-            - 0: for ``FIELD``: an instance of a subclass of ``.resources.Resource``.
+            - 0: for ``FIELD``: an instance of a subclass of ``dataql.resources.Resource``.
 
         Returns
         -------
-        .resources.Resource
-            An instance of a subclass of ``.resources.Resource``.
+        dataql.resources.Resource
+            An instance of a subclass of ``dataql.resources.Resource``.
 
         Example
         -------
@@ -385,15 +398,15 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
                  field
             - 2: for ``FIELD_NAME``: string defining the field to retrieve from the parent resource
             - 3: for ``WS`` (optional whitespace): ``None``
-            - 4: for ``OPTIONAL_FIELD_ARGUMENTS``: optional list of ``.resources.NamedArg`` to
-                 use as named arguments when calling the field.
+            - 4: for ``OPTIONAL_FIELD_ARGUMENTS``: optional list of ``dataql.resources.NamedArg``
+                 to use as named arguments when calling the field.
             - 5: for ``OPTIONAL_SELECTION_SET``: optional selection set (list of instances of
                  subclasses of ``resources.Resource``) if the field is a parent field
             - 6: for ``COM?`` (coma or space): ``None``
 
         Returns
         -------
-        .resources.Field or .resources.Object
+        dataql.resources.Field or dataql.resources.Object
             Instance of ``Object`` if it's a parent field, of ``Field`` otherwise.
 
         Example
@@ -528,13 +541,13 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         _ (node) : parsimonious.nodes.Node.
         children : list
             - 0: for ``PAR_O`` (opening parenthesis): ``None``.
-            - 1: for ``NAMED_ARGS`` list of instances of ``.resources.NamedArg``.
+            - 1: for ``NAMED_ARGS`` list of instances of ``dataql.resources.NamedArg``.
             - 2: for ``PAR_C`` (closing parenthesis): ``None``.
 
         Returns
         -------
-        list(.resources.NamedArg)
-            List of  instances of ``.resources.NamedArg``.
+        list(dataql.resources.NamedArg)
+            List of  instances of ``dataql.resources.NamedArg``.
 
         Example
         -------
@@ -557,12 +570,12 @@ class GraphQLParser(ArgumentsMixin, BaseParser):
         ---------
         _ (node) : parsimonious.nodes.Node.
         children : list
-            - 0: for ``FIELD_ARGUMENTS`` list of instances of ``.resources.NamedArg``.
+            - 0: for ``FIELD_ARGUMENTS`` list of instances of ``dataql.resources.NamedArg``.
 
         Returns
         -------
-        list(.resources.NamedArg) or None
-            List of  instances of ``.resources.NamedArg`` if any, or ``None``.
+        list(dataql.resources.NamedArg) or None
+            List of  instances of ``dataql.resources.NamedArg`` if any, or ``None``.
 
         Example
         -------
